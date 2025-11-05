@@ -1,0 +1,15 @@
+apiVersion: v2
+name: streamlit-app
+description: A Helm chart for deploying Streamlit application on OpenShift
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - streamlit
+  - python
+  - openshift
+  - gitops
+home: https://github.com/OriKomemi/Gitops-ArgoCD
+maintainers:
+  - name: DevOps Team
+    email: devops@example.com

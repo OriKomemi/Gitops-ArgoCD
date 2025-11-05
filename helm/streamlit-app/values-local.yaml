@@ -1,0 +1,63 @@
+# Values for local testing with Minikube/Kind
+# Override the default values for local development
+
+replicaCount: 1
+
+image:
+  repository: streamlit-app
+  pullPolicy: Never  # Use local image, don't pull from registry
+  tag: "latest"
+
+# Use NodePort for local access
+service:
+  type: NodePort
+  port: 8501
+  targetPort: 8501
+
+# Disable OpenShift Route for local testing
+route:
+  enabled: false
+
+# Enable Ingress for local testing (optional)
+ingress:
+  enabled: false
+  className: ""
+  hosts:
+    - host: streamlit-app.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+# Reduced resources for local environment
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Disable autoscaling for local
+autoscaling:
+  enabled: false
+
+# Relaxed probe settings for local development
+livenessProbe:
+  httpGet:
+    path: /_stcore/health
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 20
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 5
+
+readinessProbe:
+  httpGet:
+    path: /_stcore/health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3

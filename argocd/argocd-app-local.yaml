@@ -1,0 +1,62 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: streamlit-app-local
+  namespace: argocd
+  # Finalizer to ensure proper cleanup
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # The project the application belongs to
+  project: default
+
+  # Source of the Helm chart (local path or Git repo)
+  source:
+    repoURL: https://github.com/OriKomemi/Gitops-ArgoCD.git
+    targetRevision: HEAD
+    path: helm/streamlit-app
+
+    # Helm specific configuration for local testing
+    helm:
+      # Values file to use (for local environment)
+      valueFiles:
+        - values-local.yaml
+
+      # Additional parameters to override
+      parameters:
+        - name: image.repository
+          value: streamlit-app
+        - name: image.tag
+          value: latest
+        - name: image.pullPolicy
+          value: Never  # Don't pull from registry, use local image
+        - name: service.type
+          value: NodePort
+        - name: route.enabled
+          value: "false"  # Disable OpenShift routes for local
+
+  # Destination cluster and namespace
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: streamlit-app-local
+
+  # Sync policy for local testing
+  syncPolicy:
+    # Manual sync for local testing (change to automated if desired)
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+
+    # Sync options
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+
+    # Retry configuration
+    retry:
+      limit: 3
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 1m

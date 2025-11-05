@@ -1,0 +1,67 @@
+# Values for development environment
+# Override the default values for dev deployment
+
+replicaCount: 2
+
+image:
+  repository: your-registry.example.com/streamlit-app
+  pullPolicy: Always
+  tag: "dev"
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8501
+  targetPort: 8501
+
+# OpenShift Route configuration for dev
+route:
+  enabled: true
+  annotations:
+    haproxy.router.openshift.io/timeout: 60s
+  host: streamlit-app-dev.apps.openshift.example.com
+  path: /
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+# Development resources
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Disable autoscaling in dev
+autoscaling:
+  enabled: false
+
+# Standard probe settings
+livenessProbe:
+  httpGet:
+    path: /_stcore/health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /_stcore/health
+    port: http
+  initialDelaySeconds: 15
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+# Pod annotations for development
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8501"
+  prometheus.io/path: "/metrics"

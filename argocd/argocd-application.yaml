@@ -1,0 +1,70 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: streamlit-app
+  namespace: argocd
+  # Finalizer to ensure proper cleanup
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # The project the application belongs to
+  project: default
+
+  # Source of the Helm chart
+  source:
+    repoURL: https://github.com/OriKomemi/Gitops-ArgoCD.git
+    targetRevision: HEAD  # Can be changed to specific branch, tag, or commit
+    path: helm/streamlit-app
+
+    # Helm specific configuration
+    helm:
+      # Values file to use (for dev environment)
+      valueFiles:
+        - values-dev.yaml
+
+      # Additional parameters to override
+      parameters:
+        - name: image.repository
+          value: your-registry.example.com/streamlit-app
+        - name: image.tag
+          value: latest
+        - name: route.host
+          value: streamlit-app-dev.apps.openshift.example.com
+
+  # Destination cluster and namespace
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: streamlit-app-dev
+
+  # Sync policy
+  syncPolicy:
+    # Automated sync configuration
+    automated:
+      prune: true      # Automatically delete resources that are no longer defined in Git
+      selfHeal: true   # Automatically sync when the cluster state deviates from Git
+      allowEmpty: false # Don't sync if the repo is empty
+
+    # Sync options
+    syncOptions:
+      - CreateNamespace=true  # Automatically create the namespace if it doesn't exist
+      - PruneLast=true        # Prune resources as last step
+      - RespectIgnoreDifferences=true
+
+    # Retry configuration
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Health assessment configuration
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas  # Ignore replica differences (useful when HPA is enabled)
+    - group: route.openshift.io
+      kind: Route
+      jsonPointers:
+        - /status
