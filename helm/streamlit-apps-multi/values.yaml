@@ -140,13 +140,13 @@ apps:
     podAnnotations: {}
 
     # Node selector
-    nodeSelector: {}
+    nodeSelector:
 
     # Tolerations
-    tolerations: []
+    tolerations:
 
     # Affinity
-    affinity: {}
+    affinity:
 
   # Analytics application
   analytics:
@@ -216,9 +216,9 @@ apps:
       failureThreshold: 3
 
     podAnnotations: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
+    nodeSelector:
+    tolerations:
+    affinity:
 
   # Admin application
   admin:
@@ -287,9 +287,9 @@ apps:
       failureThreshold: 3
 
     podAnnotations: {}
-    nodeSelector: {}
-    tolerations: []
-    affinity: {}
+    nodeSelector:
+    tolerations:
+    affinity:
 
 # ConfigMap to store app configurations
 appConfig:

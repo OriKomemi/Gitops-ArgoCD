@@ -70,17 +70,5 @@ spec:
           configMap:
             name: {{ include "streamlit-apps-multi.fullname" $ }}-config
       {{- end }}
-      {{- with $appConfig.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $appConfig.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with $appConfig.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
 {{- end }}
 {{- end }}
