@@ -1,0 +1,74 @@
+{{- if .Values.sharedRoute.enabled }}
+{{- $routingStrategy := .Values.global.routingStrategy }}
+{{- $domain := .Values.global.domain }}
+
+{{- if or (eq $routingStrategy "subdomain") (eq $routingStrategy "both") }}
+{{/* Create individual Routes for each app with subdomain routing */}}
+{{- range $appName, $appConfig := .Values.apps }}
+{{- if and $appConfig.enabled $appConfig.routing.enableSubdomain }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "streamlit-apps-multi.appFullname" (dict "appName" $appName "context" $) }}-subdomain
+  labels:
+    {{- include "streamlit-apps-multi.appLabels" (dict "appName" $appName "context" $) | nindent 4 }}
+  {{- with $.Values.sharedRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  host: {{ include "streamlit-apps-multi.subdomainURL" (dict "subdomain" $appConfig.routing.subdomain "context" $) }}
+  to:
+    kind: Service
+    name: {{ include "streamlit-apps-multi.appFullname" (dict "appName" $appName "context" $) }}
+    weight: 100
+  port:
+    targetPort: http
+  {{- if $.Values.sharedRoute.tls.enabled }}
+  tls:
+    termination: {{ $.Values.sharedRoute.tls.termination }}
+    insecureEdgeTerminationPolicy: {{ $.Values.sharedRoute.tls.insecureEdgeTerminationPolicy }}
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- if or (eq $routingStrategy "path") (eq $routingStrategy "both") }}
+{{/* Create Routes with path-based routing for each app */}}
+{{- range $appName, $appConfig := .Values.apps }}
+{{- if and $appConfig.enabled $appConfig.routing.enablePath }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "streamlit-apps-multi.appFullname" (dict "appName" $appName "context" $) }}-path
+  labels:
+    {{- include "streamlit-apps-multi.appLabels" (dict "appName" $appName "context" $) | nindent 4 }}
+  annotations:
+    {{- with $.Values.sharedRoute.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    # Enable path-based routing
+    haproxy.router.openshift.io/rewrite-target: /
+spec:
+  host: {{ $domain }}
+  path: {{ $appConfig.routing.path }}
+  to:
+    kind: Service
+    name: {{ include "streamlit-apps-multi.appFullname" (dict "appName" $appName "context" $) }}
+    weight: 100
+  port:
+    targetPort: http
+  {{- if $.Values.sharedRoute.tls.enabled }}
+  tls:
+    termination: {{ $.Values.sharedRoute.tls.termination }}
+    insecureEdgeTerminationPolicy: {{ $.Values.sharedRoute.tls.insecureEdgeTerminationPolicy }}
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- end }}

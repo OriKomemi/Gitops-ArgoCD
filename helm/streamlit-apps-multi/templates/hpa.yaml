@@ -1,0 +1,35 @@
+{{- range $appName, $appConfig := .Values.apps }}
+{{- if and $appConfig.enabled $appConfig.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "streamlit-apps-multi.appFullname" (dict "appName" $appName "context" $) }}
+  labels:
+    {{- include "streamlit-apps-multi.appLabels" (dict "appName" $appName "context" $) | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "streamlit-apps-multi.appFullname" (dict "appName" $appName "context" $) }}
+  minReplicas: {{ $appConfig.autoscaling.minReplicas }}
+  maxReplicas: {{ $appConfig.autoscaling.maxReplicas }}
+  metrics:
+    {{- if $appConfig.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $appConfig.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if $appConfig.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ $appConfig.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+{{- end }}

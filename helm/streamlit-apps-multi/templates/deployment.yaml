@@ -1,0 +1,86 @@
+{{- range $appName, $appConfig := .Values.apps }}
+{{- if $appConfig.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "streamlit-apps-multi.appFullname" (dict "appName" $appName "context" $) }}
+  labels:
+    {{- include "streamlit-apps-multi.appLabels" (dict "appName" $appName "context" $) | nindent 4 }}
+spec:
+  {{- if not $appConfig.autoscaling.enabled }}
+  replicas: {{ $appConfig.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "streamlit-apps-multi.appSelectorLabels" (dict "appName" $appName "context" $) | nindent 6 }}
+  template:
+    metadata:
+      {{- with $appConfig.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "streamlit-apps-multi.appSelectorLabels" (dict "appName" $appName "context" $) | nindent 8 }}
+    spec:
+      {{- with $.Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "streamlit-apps-multi.serviceAccountName" $ }}
+      securityContext:
+        {{- toYaml $.Values.global.podSecurityContext | nindent 8 }}
+      containers:
+      - name: {{ $appName }}
+        securityContext:
+          {{- toYaml $.Values.global.securityContext | nindent 12 }}
+        image: "{{ include "streamlit-apps-multi.imageRepository" (dict "app" $appConfig "context" $) }}:{{ include "streamlit-apps-multi.imageTag" (dict "app" $appConfig "context" $) }}"
+        imagePullPolicy: {{ include "streamlit-apps-multi.imagePullPolicy" (dict "app" $appConfig "context" $) }}
+        ports:
+        - name: http
+          containerPort: {{ $appConfig.service.targetPort }}
+          protocol: TCP
+        {{- if $appConfig.livenessProbe }}
+        livenessProbe:
+          {{- toYaml $appConfig.livenessProbe | nindent 12 }}
+        {{- end }}
+        {{- if $appConfig.readinessProbe }}
+        readinessProbe:
+          {{- toYaml $appConfig.readinessProbe | nindent 12 }}
+        {{- end }}
+        resources:
+          {{- toYaml $appConfig.resources | nindent 12 }}
+        env:
+          # App-specific environment variables
+          {{- with $appConfig.env }}
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          # Inject app name for container entrypoint
+          - name: APP_NAME
+            value: {{ $appConfig.appName | quote }}
+        {{- if $.Values.appConfig.mountConfig }}
+        volumeMounts:
+          - name: config
+            mountPath: /app/config
+            readOnly: true
+        {{- end }}
+      {{- if $.Values.appConfig.mountConfig }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "streamlit-apps-multi.fullname" $ }}-config
+      {{- end }}
+      {{- with $appConfig.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $appConfig.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $appConfig.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+{{- end }}

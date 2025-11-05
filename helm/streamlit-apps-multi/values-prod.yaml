@@ -1,0 +1,194 @@
+# Production environment values
+
+global:
+  domain: "apps.openshift.example.com"
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  routingStrategy: "both"  # Support both subdomain and path routing
+  sharedService: false
+  image:
+    repository: "your-registry.example.com/streamlit-apps"
+    tag: "1.0.0"  # Use specific version tags in production
+    pullPolicy: Always
+
+apps:
+  dashboard:
+    enabled: true
+    replicaCount: 3  # Higher replica count for production
+    service:
+      type: ClusterIP
+      port: 8501
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8501"
+    routing:
+      subdomain: "dashboard"
+      path: "/dashboard"
+      enableSubdomain: true
+      enablePath: true  # Support both routing methods
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 75
+      targetMemoryUtilizationPercentage: 80
+    env:
+      - name: ENVIRONMENT
+        value: "production"
+      - name: APP_VERSION
+        value: "1.0.0"
+      - name: DEBUG
+        value: "false"
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8501"
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - dashboard
+              topologyKey: kubernetes.io/hostname
+
+  analytics:
+    enabled: true
+    replicaCount: 5  # Even higher for analytics workload
+    service:
+      type: ClusterIP
+      port: 8501
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8501"
+    routing:
+      subdomain: "analytics"
+      path: "/analytics"
+      enableSubdomain: true
+      enablePath: true
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+    autoscaling:
+      enabled: true
+      minReplicas: 5
+      maxReplicas: 15
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 75
+    env:
+      - name: ENVIRONMENT
+        value: "production"
+      - name: APP_VERSION
+        value: "1.0.0"
+      - name: DATA_SOURCE
+        value: "postgres-prod"
+      - name: DEBUG
+        value: "false"
+      - name: CACHE_TTL
+        value: "300"
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8501"
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - analytics
+              topologyKey: kubernetes.io/hostname
+
+  admin:
+    enabled: true
+    replicaCount: 2
+    service:
+      type: ClusterIP
+      port: 8501
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8501"
+    routing:
+      subdomain: "admin"
+      path: "/admin"
+      enableSubdomain: true
+      enablePath: false  # Only subdomain for admin in prod
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 80
+    env:
+      - name: ENVIRONMENT
+        value: "production"
+      - name: APP_VERSION
+        value: "1.0.0"
+      - name: DEBUG
+        value: "false"
+      - name: ADMIN_EMAIL
+        value: "admin@example.com"
+      - name: SESSION_TIMEOUT
+        value: "1800"
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8501"
+    affinity:
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - admin
+              topologyKey: kubernetes.io/hostname
+
+sharedIngress:
+  enabled: false
+
+sharedRoute:
+  enabled: true
+  annotations:
+    haproxy.router.openshift.io/timeout: 120s
+    haproxy.router.openshift.io/rate-limit-connections: "true"
+    haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp: "100"
+
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+  grafana:
+    enabled: true
+
+# Optional: Node selector for production nodes
+# All apps will inherit this unless overridden
+# nodeSelector:
+#   node-role.kubernetes.io/production: "true"

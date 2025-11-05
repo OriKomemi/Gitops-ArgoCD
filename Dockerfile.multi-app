@@ -1,0 +1,57 @@
+# Multi-app Dockerfile for Streamlit applications
+# Supports running multiple different Streamlit apps from a single image
+
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    STREAMLIT_SERVER_PORT=8501 \
+    STREAMLIT_SERVER_ADDRESS=0.0.0.0 \
+    STREAMLIT_SERVER_HEADLESS=true \
+    STREAMLIT_BROWSER_GATHER_USAGE_STATS=false \
+    APP_NAME=dashboard \
+    APP_VERSION=1.0.0 \
+    ENVIRONMENT=development
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy all apps
+COPY apps/ /app/apps/
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /app/
+
+# Make entrypoint executable
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Create a non-root user for security
+RUN useradd -m -u 1001 streamlit && \
+    chown -R streamlit:streamlit /app
+
+# Switch to non-root user
+USER streamlit
+
+# Expose Streamlit default port
+EXPOSE 8501
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8501/_stcore/health || exit 1
+
+# Use entrypoint script to dynamically select app
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

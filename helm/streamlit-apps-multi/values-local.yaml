@@ -1,0 +1,113 @@
+# Local environment values for testing with Minikube/Kind
+
+global:
+  domain: "localhost"
+  tls:
+    enabled: false
+  routingStrategy: "path"  # Use path-based routing for local
+  sharedService: false  # Individual services per app
+  image:
+    repository: "streamlit-apps"
+    tag: "latest"
+    pullPolicy: Never  # Use local images
+
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+apps:
+  dashboard:
+    enabled: true
+    replicaCount: 1
+    service:
+      type: NodePort
+      port: 8501
+      nodePort: 30001  # Optional: specify NodePort
+    routing:
+      subdomain: "dashboard"
+      path: "/dashboard"
+      enableSubdomain: false
+      enablePath: true
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    autoscaling:
+      enabled: false
+    env:
+      - name: ENVIRONMENT
+        value: "local"
+      - name: DEBUG
+        value: "true"
+
+  analytics:
+    enabled: true
+    replicaCount: 1
+    service:
+      type: NodePort
+      port: 8501
+      nodePort: 30002
+    routing:
+      subdomain: "analytics"
+      path: "/analytics"
+      enableSubdomain: false
+      enablePath: true
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    autoscaling:
+      enabled: false
+    env:
+      - name: ENVIRONMENT
+        value: "local"
+      - name: DEBUG
+        value: "true"
+      - name: DATA_SOURCE
+        value: "mock"
+
+  admin:
+    enabled: true
+    replicaCount: 1
+    service:
+      type: NodePort
+      port: 8501
+      nodePort: 30003
+    routing:
+      subdomain: "admin"
+      path: "/admin"
+      enableSubdomain: false
+      enablePath: true
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+    autoscaling:
+      enabled: false
+    env:
+      - name: ENVIRONMENT
+        value: "local"
+      - name: DEBUG
+        value: "true"
+
+sharedIngress:
+  enabled: false  # Disabled for local, use NodePort
+
+sharedRoute:
+  enabled: false  # No OpenShift routes for local
+
+monitoring:
+  enabled: false

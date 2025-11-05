@@ -1,0 +1,68 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: streamlit-apps-multi
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/OriKomemi/Gitops-ArgoCD.git
+    targetRevision: HEAD
+    path: helm/streamlit-apps-multi
+
+    helm:
+      # Use development values
+      valueFiles:
+        - values-dev.yaml
+
+      # Override specific parameters
+      parameters:
+        - name: global.domain
+          value: dev.apps.openshift.example.com
+        - name: global.image.repository
+          value: your-registry.example.com/streamlit-apps
+        - name: global.image.tag
+          value: dev-latest
+
+        # Enable/disable specific apps
+        - name: apps.dashboard.enabled
+          value: "true"
+        - name: apps.analytics.enabled
+          value: "true"
+        - name: apps.admin.enabled
+          value: "true"
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: streamlit-apps-dev
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+      - RespectIgnoreDifferences=true
+
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas  # Ignore when HPA is enabled
+    - group: route.openshift.io
+      kind: Route
+      jsonPointers:
+        - /status
