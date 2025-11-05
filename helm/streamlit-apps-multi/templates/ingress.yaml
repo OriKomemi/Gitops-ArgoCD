@@ -1,0 +1,88 @@
+{{- if .Values.sharedIngress.enabled }}
+{{- $routingStrategy := .Values.global.routingStrategy }}
+{{- $domain := .Values.global.domain }}
+
+{{- if or (eq $routingStrategy "subdomain") (eq $routingStrategy "both") }}
+{{/* Create individual Ingress for each app with subdomain routing */}}
+{{- range $appName, $appConfig := .Values.apps }}
+{{- if and $appConfig.enabled $appConfig.routing.enableSubdomain }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "streamlit-apps-multi.appFullname" (dict "appName" $appName "context" $) }}-subdomain
+  labels:
+    {{- include "streamlit-apps-multi.appLabels" (dict "appName" $appName "context" $) | nindent 4 }}
+  {{- with $.Values.sharedIngress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if $.Values.sharedIngress.className }}
+  ingressClassName: {{ $.Values.sharedIngress.className }}
+  {{- end }}
+  {{- if $.Values.global.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ include "streamlit-apps-multi.subdomainURL" (dict "subdomain" $appConfig.routing.subdomain "context" $) }}
+      secretName: {{ include "streamlit-apps-multi.appFullname" (dict "appName" $appName "context" $) }}-tls
+  {{- end }}
+  rules:
+    - host: {{ include "streamlit-apps-multi.subdomainURL" (dict "subdomain" $appConfig.routing.subdomain "context" $) }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "streamlit-apps-multi.appFullname" (dict "appName" $appName "context" $) }}
+                port:
+                  number: {{ $appConfig.service.port }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- if or (eq $routingStrategy "path") (eq $routingStrategy "both") }}
+{{/* Create single Ingress with path-based routing for all apps */}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "streamlit-apps-multi.fullname" . }}-path
+  labels:
+    {{- include "streamlit-apps-multi.labels" . | nindent 4 }}
+  annotations:
+    {{- with .Values.sharedIngress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+    # Required for path-based routing with Streamlit
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      rewrite ^(/[^/]+)$ $1/ redirect;
+spec:
+  {{- if .Values.sharedIngress.className }}
+  ingressClassName: {{ .Values.sharedIngress.className }}
+  {{- end }}
+  {{- if .Values.global.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.global.domain }}
+      secretName: {{ include "streamlit-apps-multi.fullname" . }}-tls
+  {{- end }}
+  rules:
+    - host: {{ .Values.global.domain }}
+      http:
+        paths:
+          {{- range $appName, $appConfig := .Values.apps }}
+          {{- if and $appConfig.enabled $appConfig.routing.enablePath }}
+          - path: {{ $appConfig.routing.path }}(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ include "streamlit-apps-multi.appFullname" (dict "appName" $appName "context" $) }}
+                port:
+                  number: {{ $appConfig.service.port }}
+          {{- end }}
+          {{- end }}
+{{- end }}
+{{- end }}

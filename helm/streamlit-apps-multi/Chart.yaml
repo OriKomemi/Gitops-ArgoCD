@@ -1,0 +1,17 @@
+apiVersion: v2
+name: streamlit-apps-multi
+description: A Helm chart for deploying multiple Streamlit applications with shared or individual services
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - streamlit
+  - python
+  - multi-app
+  - openshift
+  - gitops
+  - microservices
+home: https://github.com/OriKomemi/Gitops-ArgoCD
+maintainers:
+  - name: DevOps Team
+    email: devops@example.com

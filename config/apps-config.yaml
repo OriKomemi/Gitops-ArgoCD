@@ -1,0 +1,112 @@
+# Centralized configuration for all Streamlit apps
+# This file can be:
+# 1. Mounted as ConfigMap in Kubernetes
+# 2. Loaded from external config service
+# 3. Stored in Git for GitOps workflow
+
+apps:
+  dashboard:
+    name: "Dashboard"
+    description: "Main dashboard application"
+    version: "1.0.0"
+    enabled: true
+    port: 8501
+    replicas: 2
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+    env:
+      APP_NAME: "Dashboard"
+      ENVIRONMENT: "production"
+      DATA_REFRESH_INTERVAL: "60"
+      ENABLE_CACHE: "true"
+    routing:
+      # Subdomain routing: dashboard.example.com
+      subdomain: "dashboard"
+      # Path-based routing: example.com/dashboard
+      path: "/dashboard"
+      # Enable/disable specific routing methods
+      enableSubdomain: true
+      enablePath: true
+
+  analytics:
+    name: "Analytics"
+    description: "Analytics and reporting application"
+    version: "1.0.0"
+    enabled: true
+    port: 8501
+    replicas: 3
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1Gi"
+    env:
+      APP_NAME: "Analytics"
+      ENVIRONMENT: "production"
+      DATA_SOURCE: "postgres"
+      CACHE_TTL: "300"
+      MAX_ROWS: "100000"
+    routing:
+      subdomain: "analytics"
+      path: "/analytics"
+      enableSubdomain: true
+      enablePath: true
+
+  admin:
+    name: "Admin"
+    description: "Administration and management application"
+    version: "1.0.0"
+    enabled: true
+    port: 8501
+    replicas: 2
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+    env:
+      APP_NAME: "Admin"
+      ENVIRONMENT: "production"
+      ADMIN_EMAIL: "admin@example.com"
+      SESSION_TIMEOUT: "1800"
+      ENABLE_AUDIT_LOG: "true"
+    routing:
+      subdomain: "admin"
+      path: "/admin"
+      enableSubdomain: true
+      enablePath: true
+    # Admin-specific security
+    security:
+      requireAuth: true
+      allowedRoles: ["admin", "super-admin"]
+
+# Global settings
+global:
+  domain: "example.com"
+  tlsEnabled: true
+  # Routing strategy: "subdomain", "path", or "both"
+  routingStrategy: "both"
+  # Shared service or individual services per app
+  sharedService: false
+  # Image configuration
+  image:
+    repository: "your-registry.example.com/streamlit-apps"
+    pullPolicy: "Always"
+  # Monitoring
+  monitoring:
+    enabled: true
+    prometheus: true
+    grafana: true
+  # Logging
+  logging:
+    level: "INFO"
+    format: "json"

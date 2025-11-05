@@ -1,0 +1,110 @@
+version: '3.8'
+
+# Docker Compose for testing multiple Streamlit apps locally
+
+services:
+  # Dashboard app
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.multi-app
+    container_name: streamlit-dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - APP_NAME=dashboard
+      - APP_VERSION=1.0.0
+      - ENVIRONMENT=local
+      - DEBUG=true
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+    volumes:
+      - ./apps:/app/apps:ro
+      - ./config:/app/config:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - streamlit-network
+
+  # Analytics app
+  analytics:
+    build:
+      context: .
+      dockerfile: Dockerfile.multi-app
+    container_name: streamlit-analytics
+    ports:
+      - "8502:8501"
+    environment:
+      - APP_NAME=analytics
+      - APP_VERSION=1.0.0
+      - ENVIRONMENT=local
+      - DEBUG=true
+      - DATA_SOURCE=mock
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+    volumes:
+      - ./apps:/app/apps:ro
+      - ./config:/app/config:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - streamlit-network
+
+  # Admin app
+  admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.multi-app
+    container_name: streamlit-admin
+    ports:
+      - "8503:8501"
+    environment:
+      - APP_NAME=admin
+      - APP_VERSION=1.0.0
+      - ENVIRONMENT=local
+      - DEBUG=true
+      - ADMIN_EMAIL=admin@localhost
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+    volumes:
+      - ./apps:/app/apps:ro
+      - ./config:/app/config:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - streamlit-network
+
+  # Optional: Nginx reverse proxy for path-based routing
+  nginx:
+    image: nginx:alpine
+    container_name: streamlit-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - dashboard
+      - analytics
+      - admin
+    restart: unless-stopped
+    networks:
+      - streamlit-network
+
+networks:
+  streamlit-network:
+    driver: bridge

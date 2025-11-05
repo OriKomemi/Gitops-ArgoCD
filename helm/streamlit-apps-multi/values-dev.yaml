@@ -1,0 +1,114 @@
+# Development environment values
+
+global:
+  domain: "dev.apps.openshift.example.com"
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  routingStrategy: "subdomain"  # Use subdomain routing for dev
+  sharedService: false
+  image:
+    repository: "your-registry.example.com/streamlit-apps"
+    tag: "dev-latest"
+    pullPolicy: Always
+
+apps:
+  dashboard:
+    enabled: true
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8501
+    routing:
+      subdomain: "dashboard-dev"
+      path: "/dashboard"
+      enableSubdomain: true
+      enablePath: false
+    resources:
+      limits:
+        cpu: 300m
+        memory: 384Mi
+      requests:
+        cpu: 150m
+        memory: 192Mi
+    autoscaling:
+      enabled: false
+    env:
+      - name: ENVIRONMENT
+        value: "development"
+      - name: DEBUG
+        value: "true"
+      - name: APP_VERSION
+        value: "dev"
+
+  analytics:
+    enabled: true
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8501
+    routing:
+      subdomain: "analytics-dev"
+      path: "/analytics"
+      enableSubdomain: true
+      enablePath: false
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    autoscaling:
+      enabled: false
+    env:
+      - name: ENVIRONMENT
+        value: "development"
+      - name: DEBUG
+        value: "true"
+      - name: DATA_SOURCE
+        value: "postgres-dev"
+      - name: APP_VERSION
+        value: "dev"
+
+  admin:
+    enabled: true
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8501
+    routing:
+      subdomain: "admin-dev"
+      path: "/admin"
+      enableSubdomain: true
+      enablePath: false
+    resources:
+      limits:
+        cpu: 300m
+        memory: 384Mi
+      requests:
+        cpu: 150m
+        memory: 192Mi
+    autoscaling:
+      enabled: false
+    env:
+      - name: ENVIRONMENT
+        value: "development"
+      - name: DEBUG
+        value: "true"
+      - name: APP_VERSION
+        value: "dev"
+      - name: ADMIN_EMAIL
+        value: "dev-admin@example.com"
+
+sharedIngress:
+  enabled: false
+
+sharedRoute:
+  enabled: true
+  annotations:
+    haproxy.router.openshift.io/timeout: 60s
+
+monitoring:
+  enabled: false

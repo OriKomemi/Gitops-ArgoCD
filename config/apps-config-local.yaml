@@ -1,0 +1,77 @@
+# Local environment configuration
+# For testing with Minikube/Kind
+
+apps:
+  dashboard:
+    version: "latest"
+    replicas: 1
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+    env:
+      ENVIRONMENT: "local"
+      DEBUG: "true"
+    routing:
+      subdomain: "dashboard.local"
+      path: "/dashboard"
+      enableSubdomain: false  # Use path-based only for local
+      enablePath: true
+
+  analytics:
+    version: "latest"
+    replicas: 1
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+    env:
+      ENVIRONMENT: "local"
+      DATA_SOURCE: "mock"
+      DEBUG: "true"
+    routing:
+      subdomain: "analytics.local"
+      path: "/analytics"
+      enableSubdomain: false
+      enablePath: true
+
+  admin:
+    version: "latest"
+    replicas: 1
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "64Mi"
+      limits:
+        cpu: "100m"
+        memory: "128Mi"
+    env:
+      ENVIRONMENT: "local"
+      DEBUG: "true"
+    routing:
+      subdomain: "admin.local"
+      path: "/admin"
+      enableSubdomain: false
+      enablePath: true
+    security:
+      requireAuth: false
+
+global:
+  domain: "localhost"
+  tlsEnabled: false
+  routingStrategy: "path"  # Use path-based routing for local
+  sharedService: true  # Use single shared service locally
+  image:
+    repository: "streamlit-apps"
+    tag: "latest"
+    pullPolicy: "Never"  # Use local images
+  monitoring:
+    enabled: false
+  logging:
+    level: "DEBUG"

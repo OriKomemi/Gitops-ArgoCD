@@ -1,0 +1,68 @@
+# Development environment configuration
+# Overrides for dev environment
+
+apps:
+  dashboard:
+    version: "dev-latest"
+    replicas: 1
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+    env:
+      ENVIRONMENT: "development"
+      DEBUG: "true"
+    routing:
+      subdomain: "dashboard-dev"
+      path: "/dashboard"
+
+  analytics:
+    version: "dev-latest"
+    replicas: 1
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+    env:
+      ENVIRONMENT: "development"
+      DATA_SOURCE: "sqlite"
+      DEBUG: "true"
+    routing:
+      subdomain: "analytics-dev"
+      path: "/analytics"
+
+  admin:
+    version: "dev-latest"
+    replicas: 1
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "200m"
+        memory: "256Mi"
+    env:
+      ENVIRONMENT: "development"
+      DEBUG: "true"
+    routing:
+      subdomain: "admin-dev"
+      path: "/admin"
+    security:
+      requireAuth: false  # Disabled for dev
+
+global:
+  domain: "dev.example.com"
+  tlsEnabled: false
+  image:
+    tag: "dev-latest"
+    pullPolicy: "Always"
+  monitoring:
+    enabled: false
+  logging:
+    level: "DEBUG"

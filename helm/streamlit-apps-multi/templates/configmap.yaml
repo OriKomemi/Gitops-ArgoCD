@@ -1,0 +1,35 @@
+{{- if .Values.appConfig.mountConfig }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "streamlit-apps-multi.fullname" . }}-config
+  labels:
+    {{- include "streamlit-apps-multi.labels" . | nindent 4 }}
+data:
+  {{- if .Values.appConfig.data }}
+  {{- toYaml .Values.appConfig.data | nindent 2 }}
+  {{- end }}
+
+  # App-specific configuration can be added here
+  apps.yaml: |
+    apps:
+      {{- range $appName, $appConfig := .Values.apps }}
+      {{- if $appConfig.enabled }}
+      {{ $appName }}:
+        name: {{ $appConfig.name | quote }}
+        version: {{ $appConfig.version | quote }}
+        port: {{ $appConfig.service.port }}
+        routing:
+          subdomain: {{ $appConfig.routing.subdomain | quote }}
+          path: {{ $appConfig.routing.path | quote }}
+          enableSubdomain: {{ $appConfig.routing.enableSubdomain }}
+          enablePath: {{ $appConfig.routing.enablePath }}
+      {{- end }}
+      {{- end }}
+
+    global:
+      domain: {{ .Values.global.domain | quote }}
+      routingStrategy: {{ .Values.global.routingStrategy | quote }}
+      sharedService: {{ .Values.global.sharedService }}
+
+{{- end }}

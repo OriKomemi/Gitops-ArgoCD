@@ -1,0 +1,321 @@
+# Default values for streamlit-apps-multi
+# This chart supports deploying multiple Streamlit applications
+
+# Global settings
+global:
+  # Domain for all apps
+  domain: "example.com"
+
+  # TLS configuration
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+  # Routing strategy: "subdomain", "path", or "both"
+  routingStrategy: "both"
+
+  # Use shared service for all apps or individual services
+  sharedService: false
+
+  # Image pull secrets
+  imagePullSecrets: []
+
+  # Default image configuration
+  image:
+    repository: "your-registry.example.com/streamlit-apps"
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+
+  # Default resources
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+  # Pod security context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    fsGroup: 1001
+    seccompProfile:
+      type: RuntimeDefault
+
+  # Container security context
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: false
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Applications configuration
+apps:
+  # Dashboard application
+  dashboard:
+    enabled: true
+    name: "Dashboard"
+    appName: "dashboard"  # Must match directory name in apps/
+    version: "1.0.0"
+
+    replicaCount: 2
+
+    image:
+      # Inherits from global.image if not specified
+      # repository: ""
+      # tag: ""
+      pullPolicy: IfNotPresent
+
+    service:
+      type: ClusterIP
+      port: 8501
+      targetPort: 8501
+      annotations: {}
+
+    # Routing configuration
+    routing:
+      # Subdomain: dashboard.example.com
+      subdomain: "dashboard"
+      # Path: example.com/dashboard
+      path: "/dashboard"
+      # Enable specific routing methods
+      enableSubdomain: true
+      enablePath: true
+
+    # Resources
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+    # Autoscaling
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 80
+      targetMemoryUtilizationPercentage: 80
+
+    # Environment variables
+    env:
+      - name: APP_NAME
+        value: "Dashboard"
+      - name: APP_VERSION
+        value: "1.0.0"
+      - name: ENVIRONMENT
+        value: "production"
+
+    # Health checks
+    livenessProbe:
+      httpGet:
+        path: /_stcore/health
+        port: http
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+
+    readinessProbe:
+      httpGet:
+        path: /_stcore/health
+        port: http
+      initialDelaySeconds: 15
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+
+    # Pod annotations
+    podAnnotations: {}
+
+    # Node selector
+    nodeSelector:
+
+    # Tolerations
+    tolerations:
+
+    # Affinity
+    affinity:
+
+  # Analytics application
+  analytics:
+    enabled: true
+    name: "Analytics"
+    appName: "analytics"
+    version: "1.0.0"
+
+    replicaCount: 3
+
+    image:
+      pullPolicy: IfNotPresent
+
+    service:
+      type: ClusterIP
+      port: 8501
+      targetPort: 8501
+      annotations: {}
+
+    routing:
+      subdomain: "analytics"
+      path: "/analytics"
+      enableSubdomain: true
+      enablePath: true
+
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+      requests:
+        cpu: 500m
+        memory: 512Mi
+
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 70
+      targetMemoryUtilizationPercentage: 80
+
+    env:
+      - name: APP_NAME
+        value: "Analytics"
+      - name: APP_VERSION
+        value: "1.0.0"
+      - name: ENVIRONMENT
+        value: "production"
+      - name: DATA_SOURCE
+        value: "postgres"
+
+    livenessProbe:
+      httpGet:
+        path: /_stcore/health
+        port: http
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+
+    readinessProbe:
+      httpGet:
+        path: /_stcore/health
+        port: http
+      initialDelaySeconds: 15
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+
+    podAnnotations: {}
+    nodeSelector:
+    tolerations:
+    affinity:
+
+  # Admin application
+  admin:
+    enabled: true
+    name: "Admin"
+    appName: "admin"
+    version: "1.0.0"
+
+    replicaCount: 2
+
+    image:
+      pullPolicy: IfNotPresent
+
+    service:
+      type: ClusterIP
+      port: 8501
+      targetPort: 8501
+      annotations: {}
+
+    routing:
+      subdomain: "admin"
+      path: "/admin"
+      enableSubdomain: true
+      enablePath: true
+
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 80
+
+    env:
+      - name: APP_NAME
+        value: "Admin"
+      - name: APP_VERSION
+        value: "1.0.0"
+      - name: ENVIRONMENT
+        value: "production"
+      - name: ADMIN_EMAIL
+        value: "admin@example.com"
+
+    livenessProbe:
+      httpGet:
+        path: /_stcore/health
+        port: http
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+
+    readinessProbe:
+      httpGet:
+        path: /_stcore/health
+        port: http
+      initialDelaySeconds: 15
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3
+
+    podAnnotations: {}
+    nodeSelector:
+    tolerations:
+    affinity:
+
+# ConfigMap to store app configurations
+appConfig:
+  # Mount configuration from file
+  mountConfig: true
+  # Configuration data (if not using external config file)
+  data: {}
+
+# Shared ingress/route settings (when using shared service)
+sharedIngress:
+  enabled: false
+  className: ""
+  annotations: {}
+
+sharedRoute:
+  enabled: true
+  annotations: {}
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+# Monitoring and observability
+monitoring:
+  enabled: false
+  prometheus:
+    enabled: false
+  grafana:
+    enabled: false
